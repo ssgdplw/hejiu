@@ -49,7 +49,6 @@
     .c-duty { background: var(--duty-bg); color: var(--duty-text); border-color: var(--duty-text); }
     .c-rest { background: var(--rest-bg); color: var(--rest-text); border-color: var(--rest-text); }
 
-    /* 调整为4列均匀分布 */
     .btn-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
     .btn { padding: 12px 2px; border: none; border-radius: 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer; background: var(--primary); color: #fff; transition: opacity 0.2s; }
     .btn:active { opacity: 0.8; }
@@ -96,7 +95,7 @@
 
   <div class="btn-group">
     <button class="btn" onclick="openModal('add')">＋添加人员</button>
-    <button class="btn btn-share" onclick="shareAsImage()">📸保存图片</button>
+    <button class="btn btn-share" onclick="shareAsImage()">📸分享/保存</button>
     <button class="btn btn-secondary" onclick="exportData()">📤导出配置</button>
     <button class="btn btn-secondary" onclick="triggerImport()">📥导入配置</button>
   </div>
@@ -295,22 +294,53 @@
     const name = document.getElementById('pName').value.trim();
     if(name && editingIdx !== null) { people[editingIdx].name = name; render(); closeModal(); }
   }
+
+  // --- 核心优化：分享逻辑 ---
   async function shareAsImage() {
     const area = document.getElementById('captureArea');
     const originalStates = people.map(p => p._open);
+    
+    // 展开所有内容
     people.forEach(p => p._open = true);
     render();
+
     setTimeout(async () => {
-      const canvas = await html2canvas(area, { backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--body-bg'), scale: 2 });
-      const imageData = canvas.toDataURL("image/png");
-      const link = document.createElement('a');
-      link.download = `排班表_${currentMonth}月.png`;
-      link.href = imageData;
-      link.click();
-      people.forEach((p, i) => p._open = originalStates[i]);
-      render();
-    }, 300);
+      try {
+        const canvas = await html2canvas(area, { 
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--body-bg'), 
+          scale: 2,
+          useCORS: true 
+        });
+        
+        canvas.toBlob(async (blob) => {
+          const file = new File([blob], `排班表_${currentMonth}月.png`, { type: 'image/png' });
+          
+          // 如果系统支持原生分享功能
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: '智能排班表',
+              text: `${currentMonth}月排班安排`
+            });
+          } else {
+            // 降级为传统下载
+            const link = document.createElement('a');
+            link.download = `排班表_${currentMonth}月.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            alert("当前环境不支持直接分享，已自动下载图片到相册。");
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        alert("分享失败，请重试");
+      } finally {
+        people.forEach((p, i) => p._open = originalStates[i]);
+        render();
+      }
+    }, 400);
   }
+
   function clearPersonData(idx, e) {
     e.stopPropagation();
     if(confirm(`重置 ${people[idx].name} 吗？`)) { people[idx].duty=[]; people[idx].rest=[]; render(); }
