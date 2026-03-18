@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" id="themeColor" content="#f3f4f6">
-  <title>智能排班系统</title>
+  <title>智能排班助手</title>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   
-  <link rel="manifest" href='data:application/json,{"name":"智能排班系统","short_name":"排班助手","start_url":".","display":"standalone","background_color":"#f3f4f6","theme_color":"#4f46e5","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2370/2370264.png","sizes":"512x512","type":"image/png"}]}'>
-
   <style>
     :root {
       --primary: #4f46e5;
@@ -16,13 +15,12 @@
       --card-bg: #ffffff;
       --text-main: #1f2937;
       --text-sub: #6b7280;
-      --duty-bg: #eef2ff;
-      --duty-text: #4338ca;
-      --rest-bg: #fff1f2;
-      --rest-text: #be123c;
-      --border: #f3f4f6;
+      --duty-bg: #fee2e2;
+      --duty-text: #dc2626;
+      --rest-bg: #e0f2fe;
+      --rest-text: #0284c7;
+      --border: #e5e7eb;
       --input-bg: #f9fafb;
-      --modal-overlay: rgba(15, 23, 42, 0.6);
     }
 
     [data-theme="dark"] {
@@ -30,205 +28,282 @@
       --card-bg: #1f2937;
       --text-main: #f9fafb;
       --text-sub: #9ca3af;
-      --duty-bg: #312e81;
-      --duty-text: #c7d2fe;
-      --rest-bg: #881337;
-      --rest-text: #fecdd3;
+      --duty-bg: #7f1d1d;
+      --duty-text: #fecaca;
+      --rest-bg: #0c4a6e;
+      --rest-text: #bae6fd;
       --border: #374151;
       --input-bg: #111827;
-      --modal-overlay: rgba(0, 0, 0, 0.8);
     }
 
-    body { font-family: -apple-system, sans-serif; background: var(--body-bg); margin: 0; padding: 15px; color: var(--text-main); transition: background 0.3s, color 0.3s; }
+    body { font-family: -apple-system, sans-serif; background: var(--body-bg); margin: 0; padding: 15px; color: var(--text-main); transition: background 0.3s; -webkit-tap-highlight-color: transparent; }
+    #captureArea { padding: 10px; border-radius: 20px; } /* 用于截图的容器 */
     .container { max-width: 600px; margin: 0 auto; }
+    
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .header h2 { margin: 0; font-size: 1.3rem; font-weight: 800; }
-    #themeToggle { background: var(--card-bg); border: 1px solid var(--border); padding: 8px; border-radius: 10px; cursor: pointer; color: var(--text-main); font-size: 1.2rem; }
+    
+    .conflict-panel { background: var(--card-bg); border-radius: 16px; padding: 15px; margin-bottom: 20px; border: 1px solid var(--border); display: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .conflict-title { font-weight: 800; font-size: 0.9rem; margin-bottom: 12px; color: var(--text-main); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .conflict-item { font-size: 0.85rem; padding: 8px 12px; border-radius: 10px; margin-bottom: 6px; border-left: 5px solid; }
+    .c-duty { background: var(--duty-bg); color: var(--duty-text); border-color: var(--duty-text); }
+    .c-rest { background: var(--rest-bg); color: var(--rest-text); border-color: var(--rest-text); }
 
-    .conflict-board { display: none; background: var(--card-bg); border-radius: 14px; padding: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    .conflict-line { padding: 8px 12px; margin-bottom: 6px; border-radius: 8px; font-size: 0.8rem; border-left: 4px solid; }
-    .conf-duty { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: #ef4444; }
-    .conf-rest { background: rgba(14, 165, 233, 0.1); color: #0ea5e9; border-color: #0ea5e9; }
+    .btn-group { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .btn { flex: 1; min-width: 100px; padding: 14px; border: none; border-radius: 14px; font-size: 0.9rem; font-weight: 600; cursor: pointer; background: var(--primary); color: #fff; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+    .btn-secondary { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); box-shadow: none; }
+    .btn-share { background: #10b981; }
 
-    .btn { width: 100%; padding: 14px; border: none; border-radius: 14px; font-size: 1rem; font-weight: 600; cursor: pointer; background: var(--primary); color: #fff; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+    .person-card { background: var(--card-bg); border-radius: 20px; margin-bottom: 12px; border: 1px solid var(--border); overflow: hidden; }
+    .person-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .name-clickable { cursor: pointer; text-decoration: underline dotted var(--text-sub); }
+    .stats-tags span { font-size: 0.7rem; margin-right: 8px; background: var(--body-bg); padding: 2px 8px; border-radius: 6px; }
 
-    .person-card { background: var(--card-bg); border-radius: 18px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
-    .person-header { padding: 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-    .name-area b { font-size: 1.1rem; }
-    .name-area span { font-size: 0.75rem; color: var(--text-sub); margin-left: 8px; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 6px; }
+    .action-text { font-size: 0.8rem; color: var(--text-sub); margin-right: 12px; cursor: pointer; }
 
-    .calendar-wrapper { display: none; padding: 0 10px 20px 10px; }
-    .person-card.active .calendar-wrapper { display: block; }
+    .calendar-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+    .person-card.open .calendar-content { max-height: 1000px; }
 
-    table { width: 100%; border-collapse: separate; border-spacing: 5px; table-layout: fixed; }
-    th { font-size: 0.75rem; color: var(--text-sub); padding-bottom: 10px; }
-    td { padding: 8px 0; min-height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; background: var(--input-bg); font-weight: 700; cursor: pointer; font-size: 1rem; border: 1px solid var(--border); box-sizing: border-box; line-height: 1; transition: transform 0.1s; }
-    tr { display: flex; width: 100%; }
-    td { flex: 1; margin: 2.5px; }
-
+    table { width: 100%; border-collapse: separate; border-spacing: 4px; padding: 10px 15px 20px 15px; }
+    th { font-size: 0.7rem; color: var(--text-sub); }
+    td { height: 48px; text-align: center; border-radius: 12px; background: var(--input-bg); font-weight: 700; border: 1px solid var(--border); font-size: 0.95rem; }
+    
     .is-duty { background: var(--duty-bg) !important; color: var(--duty-text) !important; border-color: var(--duty-text) !important; }
     .is-rest { background: var(--rest-bg) !important; color: var(--rest-text) !important; border-color: var(--rest-text) !important; }
-    .tag { display: block; font-size: 0.6rem; font-weight: 500; margin-top: 5px; line-height: 1; }
+    .tag { display: block; font-size: 0.55rem; font-weight: normal; }
 
-    .modal { display: none; position: fixed; inset: 0; background: var(--modal-overlay); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-    .modal-content { background: var(--card-bg); width: 92%; max-width: 450px; border-radius: 24px; padding: 25px; box-sizing: border-box; }
-    textarea { width: 100%; height: 240px; border: 1px solid var(--border); padding: 16px; margin: 10px 0 20px 0; border-radius: 14px; font-family: inherit; font-size: 1rem; background: var(--input-bg); color: var(--text-main); box-sizing: border-box; resize: none; outline: none; }
-    .modal-btns { display: flex; gap: 12px; }
-    .modal-btns button { flex: 1; padding: 14px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
+    .card-footer { padding: 14px 20px; background: var(--input-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
+    .del-link { color: #ef4444; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+    .modal-content { background: var(--card-bg); width: 85%; max-width: 320px; padding: 25px; border-radius: 24px; }
+    input { width: 100%; padding: 14px; margin: 18px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--input-bg); color: var(--text-main); font-size: 1rem; box-sizing: border-box; }
   </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container" id="mainContainer">
   <div class="header">
-    <h2 id="monthTitle">加载中...</h2>
-    <button id="themeToggle" title="切换模式">🌗</button>
+    <h2 id="monthTitle">智能排班助手</h2>
+    <button id="themeToggle" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">🌗</button>
   </div>
-  <button class="btn" onclick="openModal()">修改排班数据</button>
-  <div id="conflictBoard" class="conflict-board"></div>
-  <div id="mainList"></div>
-</div>
+
+  <div class="btn-group">
+    <button class="btn" onclick="openModal('add')">＋ 添加人员</button>
+    <button class="btn btn-share" onclick="shareAsImage()">📸 保存分享</button>
+    <button class="btn btn-secondary" onclick="clearAllData()">全部清空</button>
+  </div>
+
+  <div id="captureArea">
+    <div id="conflictPanel" class="conflict-panel">
+      <div class="conflict-title">📅 排班冲突检测</div>
+      <div id="conflictList"></div>
+    </div>
+    <div id="mainList"></div>
+  </div>
+  </div>
 
 <div class="modal" id="modal">
   <div class="modal-content">
-    <h3>数据录入</h3>
-    <textarea id="rawInput"></textarea>
-    <div class="modal-btns">
-      <button style="background:var(--border); color:var(--text-sub);" onclick="closeModal()">取消</button>
-      <button style="background:var(--primary); color:#fff" onclick="handleCommit()">确认录入</button>
+    <h3 id="modalTitle" style="margin:0; text-align:center;">新增人员</h3>
+    <input type="text" id="pName" placeholder="请输入姓名" maxlength="10">
+    <div style="display:flex; gap:10px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">取消</button>
+      <button class="btn" style="flex:1" id="modalConfirmBtn">确定</button>
     </div>
   </div>
 </div>
 
 <script>
-  // 自动获取当前年份和月份
   const now = new Date();
   const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1; // getMonth 是 0-11
-  
-  // 初始化标题
-  document.getElementById('monthTitle').innerText = `${currentYear}年${currentMonth}月 排班管理`;
+  const currentMonth = now.getMonth() + 1;
+  document.getElementById('monthTitle').innerText = `${currentYear}年${currentMonth}月`;
 
-  // 主题逻辑
+  let people = JSON.parse(localStorage.getItem('duty_v17_final') || '[]');
+  let editingIdx = null;
+
   const themeToggle = document.getElementById('themeToggle');
-  const htmlTag = document.documentElement;
-  function setTheme(theme) {
-    if (theme === 'dark') {
-      htmlTag.setAttribute('data-theme', 'dark');
-      document.getElementById('themeColor').content = "#111827";
-      localStorage.setItem('theme_pref', 'dark');
-    } else {
-      htmlTag.removeAttribute('data-theme');
-      document.getElementById('themeColor').content = "#f3f4f6";
-      localStorage.setItem('theme_pref', 'light');
-    }
-  }
-  const savedTheme = localStorage.getItem('theme_pref');
-  if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) setTheme('dark');
-  themeToggle.onclick = () => setTheme(htmlTag.hasAttribute('data-theme') ? 'light' : 'dark');
-
-  // 业务逻辑
-  let scheduleData = [];
-
-  function parseStrictly(text) {
-    const lines = text.trim().split(/[\n;；]/);
-    let results = [];
-    let errorMsgs = [];
-    lines.forEach(line => {
-      if(!line.trim()) return;
-      const name = line.split(/[，, \s值休DRWO]/i)[0].trim();
-      if (!name) return;
-      const getRaw = (reg) => {
-        const m = line.match(reg);
-        return m ? m[1].split(/[，,、\s]+/).filter(Boolean) : [];
-      };
-      const dRaw = getRaw(/(?:值班|值|Duty)[^\d]*([\d,，、\s]+)/i);
-      const rRaw = getRaw(/(?:公休|休息|休|Off)[^\d]*([\d,，、\s]+)/i);
-      const findDup = (arr) => arr.filter((item, i) => arr.indexOf(item) !== i);
-      const dDups = [...new Set(findDup(dRaw))];
-      const rDups = [...new Set(findDup(rRaw))];
-      if(dDups.length > 0) errorMsgs.push(`【${name}】值班重复：${dDups.join(',')}日`);
-      if(rDups.length > 0) errorMsgs.push(`【${name}】公休重复：${rDups.join(',')}日`);
-      const cross = dRaw.filter(n => rRaw.includes(n));
-      if(cross.length > 0) errorMsgs.push(`【${name}】值休冲突：${[...new Set(cross)].join(',')}日`);
-      results.push({ name, duty: dRaw.map(Number), rest: rRaw.map(Number), _expanded: true });
-    });
-    return { results, errorMsgs };
-  }
+  themeToggle.onclick = () => {
+    document.documentElement.toggleAttribute('data-theme');
+    localStorage.setItem('theme', document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light');
+  };
+  if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 
   function render() {
     const list = document.getElementById('mainList');
-    const board = document.getElementById('conflictBoard');
-    list.innerHTML = ''; board.innerHTML = ''; board.style.display = 'none';
-    const dutyMap = {}; const restMap = {};
-
-    scheduleData.forEach((p, idx) => {
-      p.duty.forEach(d => (dutyMap[d] = dutyMap[d] || []).push(p.name));
-      p.rest.forEach(d => (restMap[d] = restMap[d] || []).push(p.name));
+    list.innerHTML = '';
+    
+    people.forEach((p, pIdx) => {
       const card = document.createElement('div');
-      card.className = 'person-card' + (p._expanded ? ' active' : '');
-      card.innerHTML = `<div class="person-header" onclick="toggleCard(${idx})"><div class="name-area"><b>${p.name}</b><span>值 ${p.duty.length}</span><span>休 ${p.rest.length}</span></div><div style="font-size:0.8rem">${p._expanded ? '收起 ▾' : '展开 ▸'}</div></div><div class="calendar-wrapper">${drawCalendar(p, idx)}</div>`;
+      card.className = `person-card ${p._open ? 'open' : ''}`;
+      card.innerHTML = `
+        <div class="person-header">
+          <div onclick="toggleFold(${pIdx})" style="flex:1">
+            <b class="name-clickable" onclick="event.stopPropagation(); openEditName(${pIdx})">${p.name}</b>
+            <div class="stats-tags">
+              <span style="color:var(--duty-text)">值班 ${p.duty.length}</span>
+              <span style="color:var(--rest-text)">休息 ${p.rest.length}</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center">
+            <span class="action-text" onclick="clearPersonData(${pIdx}, event)">清空数据</span>
+            <span style="font-size:0.8rem; color:var(--text-sub)" onclick="toggleFold(${pIdx})">${p._open?'▼':'▶'}</span>
+          </div>
+        </div>
+        <div class="calendar-content">
+          ${drawCalendar(p, pIdx)}
+          <div class="card-footer">
+            <span style="font-size:0.75rem; color:var(--text-sub)">点击名字可修改姓名</span>
+            <span class="del-link" onclick="deletePerson(${pIdx})">删除人员</span>
+          </div>
+        </div>
+      `;
       list.appendChild(card);
     });
 
-    let hasC = false;
-    for (let d in dutyMap) if(dutyMap[d].length > 1) { hasC = true; board.innerHTML += `<div class="conflict-line conf-duty"><b>${d}日 重复值班:</b> ${dutyMap[d].join(' & ')}</div>`; }
-    for (let d in restMap) if(restMap[d].length > 1) { hasC = true; board.innerHTML += `<div class="conflict-line conf-rest"><b>${d}日 重复公休:</b> ${restMap[d].join(' & ')}</div>`; }
-    if(hasC) board.style.display = 'block';
+    checkConflicts();
+    localStorage.setItem('duty_v17_final', JSON.stringify(people));
+  }
+
+  function checkConflicts() {
+    const dutyMap = {}; const restMap = {};
+    people.forEach(p => {
+      p.duty.forEach(d => (dutyMap[d] = dutyMap[d] || []).push(p.name));
+      p.rest.forEach(d => (restMap[d] = restMap[d] || []).push(p.name));
+    });
+    const panel = document.getElementById('conflictPanel');
+    const cList = document.getElementById('conflictList');
+    cList.innerHTML = '';
+    let hasConflict = false;
+
+    Object.keys(dutyMap).sort((a,b)=>a-b).forEach(d => {
+      if(dutyMap[d].length > 1) {
+        hasConflict = true;
+        cList.innerHTML += `<div class="conflict-item c-duty"><b>${dutyMap[d].join(' & ')}</b> 在 <b>${d}日</b> 重复值班</div>`;
+      }
+    });
+    Object.keys(restMap).sort((a,b)=>a-b).forEach(d => {
+      if(restMap[d].length > 1) {
+        hasConflict = true;
+        cList.innerHTML += `<div class="conflict-item c-rest"><b>${restMap[d].join(' & ')}</b> 在 <b>${d}日</b> 重复休息</div>`;
+      }
+    });
+    panel.style.display = hasConflict ? 'block' : 'none';
   }
 
   function drawCalendar(p, pIdx) {
-    // 自动计算当前月份的天数和第一天是周几
-    const totalDays = new Date(currentYear, currentMonth, 0).getDate();
-    const firstDayIndex = (new Date(currentYear, currentMonth - 1, 1).getDay() || 7) - 1;
-
-    let h = '<table><tr><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr><tr>';
-    for(let i=0; i<firstDayIndex; i++) h += '<td></td>';
-    for(let d=1; d<=totalDays; d++) {
-      if((d+firstDayIndex-1)%7 === 0 && d!==1) h += '</tr><tr>';
+    const days = new Date(currentYear, currentMonth, 0).getDate();
+    const start = (new Date(currentYear, currentMonth - 1, 1).getDay() || 7) - 1;
+    let html = '<table><tr><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr><tr>';
+    for(let i=0; i<start; i++) html += '<td></td>';
+    for(let d=1; d<=days; d++) {
+      if((d+start-1)%7 === 0 && d!==1) html += '</tr><tr>';
       const isD = p.duty.includes(d); const isR = p.rest.includes(d);
-      h += `<td class="${isD?'is-duty':(isR?'is-rest':'')}" onclick="cycle(${pIdx},${d})">${d}${isD?'<span class="tag">值班</span>':(isR?'<span class="tag">公休</span>':'')}</td>`;
+      html += `<td class="${isD?'is-duty':(isR?'is-rest':'')}" onclick="toggleDay(${pIdx},${d})">${d}<span class="tag">${isD?'值班':(isR?'休息':'')}</span></td>`;
     }
-    const used = (firstDayIndex + totalDays) % 7;
-    if(used !== 0) for(let i=0; i<7-used; i++) h += '<td></td>';
-    return h + '</tr></table>';
+    return html + '</tr></table>';
   }
 
-  window.cycle = function(pIdx, d) {
-    const p = scheduleData[pIdx];
-    if(p.duty.includes(d)) { p.duty = p.duty.filter(x => x !== d); p.rest.push(d); }
-    else if(p.rest.includes(d)) { p.rest = p.rest.filter(x => x !== d); }
+  function toggleFold(i) { people[i]._open = !people[i]._open; render(); }
+  function toggleDay(pIdx, d) {
+    const p = people[pIdx];
+    if(p.duty.includes(d)) { p.duty = p.duty.filter(x=>x!==d); p.rest.push(d); }
+    else if(p.rest.includes(d)) { p.rest = p.rest.filter(x=>x!==d); }
     else { p.duty.push(d); }
-    updateAndSave(); render();
-  };
-
-  function handleCommit() {
-    const raw = document.getElementById('rawInput').value;
-    const { results, errorMsgs } = parseStrictly(raw);
-    if(errorMsgs.length > 0) { alert("❌ 录入失败：\n\n" + errorMsgs.join('\n')); return; }
-    scheduleData = results; localStorage.setItem('duty_v11', raw); render(); closeModal();
+    render();
   }
 
-  function updateAndSave() {
-    const text = scheduleData.map(p => `${p.name} 值班${p.duty.sort((a,b)=>a-b).join(',')} 公休${p.rest.sort((a,b)=>a-b).join(',')}`).join('\n');
-    document.getElementById('rawInput').value = text;
-    localStorage.setItem('duty_v11', text);
+  // 修改姓名逻辑
+  function openEditName(idx) {
+    editingIdx = idx;
+    openModal('edit');
+    document.getElementById('pName').value = people[idx].name;
   }
 
-  function toggleCard(i) { scheduleData[i]._expanded = !scheduleData[i]._expanded; render(); }
-  function openModal() { document.getElementById('modal').style.display = 'flex'; }
-  function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
-  window.onload = () => {
-    const s = localStorage.getItem('duty_v11');
-    if(s) { document.getElementById('rawInput').value = s; const { results } = parseStrictly(s); scheduleData = results; render(); }
-    else { openModal(); }
-    if ('serviceWorker' in navigator) {
-      const swCode = "self.addEventListener('fetch', function(e) {});";
-      const blob = new Blob([swCode], {type: 'text/javascript'});
-      navigator.serviceWorker.register(URL.createObjectURL(blob));
+  function openModal(mode) {
+    const modal = document.getElementById('modal');
+    const title = document.getElementById('modalTitle');
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+    modal.style.display = 'flex';
+    if(mode === 'add') {
+      title.innerText = '新增人员';
+      confirmBtn.onclick = addPerson;
+    } else {
+      title.innerText = '修改姓名';
+      confirmBtn.onclick = saveName;
     }
-  };
+  }
+
+  function closeModal() { document.getElementById('modal').style.display = 'none'; editingIdx = null; }
+
+  function addPerson() {
+    const name = document.getElementById('pName').value.trim();
+    if(name) { people.push({name, duty:[], rest:[], _open:true}); render(); closeModal(); }
+  }
+
+  function saveName() {
+    const name = document.getElementById('pName').value.trim();
+    if(name && editingIdx !== null) { people[editingIdx].name = name; render(); closeModal(); }
+  }
+
+  // 打包成图片并触发分享
+  async function shareAsImage() {
+    const area = document.getElementById('captureArea');
+    // 展开所有人，保证截图完整
+    const originalStates = people.map(p => p._open);
+    people.forEach(p => p._open = true);
+    render();
+
+    setTimeout(async () => {
+      try {
+        const canvas = await html2canvas(area, {
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--body-bg'),
+          scale: 2 // 提高清晰度
+        });
+        
+        const imageData = canvas.toDataURL("image/png");
+        
+        // 如果浏览器支持 Web Share API (大部分手机浏览器支持)
+        if (navigator.share && navigator.canShare) {
+          const blob = await (await fetch(imageData)).blob();
+          const file = new File([blob], `排班表_${currentMonth}月.png`, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: '我的排班表',
+            });
+          }
+        } else {
+          // 不支持分享则直接下载
+          const link = document.createElement('a');
+          link.download = `排班表_${currentMonth}月.png`;
+          link.href = imageData;
+          link.click();
+        }
+      } catch (err) {
+        alert('生成图片失败，请重试');
+      } finally {
+        // 恢复之前的展开状态
+        people.forEach((p, i) => p._open = originalStates[i]);
+        render();
+      }
+    }, 500);
+  }
+
+  function clearPersonData(idx, e) {
+    e.stopPropagation();
+    if(confirm(`清空 ${people[idx].name} 的数据？`)) { people[idx].duty=[]; people[idx].rest=[]; render(); }
+  }
+
+  function deletePerson(idx) {
+    if(confirm(`彻底删除 ${people[idx].name}？`)) { people.splice(idx, 1); render(); }
+  }
+
+  function clearAllData() {
+    if(confirm('警告：清空全部数据！')) { people = []; render(); }
+  }
+
+  window.onload = render;
 </script>
 </body>
 </html>
