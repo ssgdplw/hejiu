@@ -58,7 +58,6 @@
     .person-card { background: var(--card-bg); border-radius: 20px; margin-bottom: 12px; border: 1px solid var(--border); overflow: hidden; }
     .person-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
     
-    /* 名字可点击样式 */
     .name-clickable { cursor: pointer; border-bottom: 1.5px dashed var(--primary); color: var(--text-main); margin-right: 4px; }
     
     .stats-tags span { font-size: 0.7rem; margin-right: 8px; background: var(--body-bg); padding: 2px 8px; border-radius: 6px; }
@@ -229,7 +228,6 @@
 
   function drawCalendar(p, pIdx) {
     const days = new Date(currentYear, currentMonth, 0).getDate();
-    // 修正周日排位逻辑，确保日历对齐
     let firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
     let start = (firstDay === 0) ? 6 : firstDay - 1; 
 
@@ -286,7 +284,6 @@
     render();
   }
 
-  // 修改姓名逻辑
   function openEditName(idx) { 
     editingIdx = idx; 
     openModal('edit'); 
@@ -326,23 +323,53 @@
     }
   }
 
+  // 修改后的分享函数：支持调用原生 APP 分享菜单
   async function shareAsImage() {
     const area = document.getElementById('captureArea');
     const originalStates = people.map(p => p._open);
+    
+    // 强制展开所有卡片以截取完整内容
     people.forEach(p => p._open = true);
     render();
+
     setTimeout(async () => {
-      const canvas = await html2canvas(area, { 
-        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--body-bg'), 
-        scale: 2 
-      });
-      const imageData = canvas.toDataURL("image/png");
-      const link = document.createElement('a');
-      link.download = `排班表_${currentMonth}月.png`;
-      link.href = imageData;
-      link.click();
-      people.forEach((p, i) => p._open = originalStates[i]);
-      render();
+      try {
+        const canvas = await html2canvas(area, { 
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--body-bg'), 
+          scale: 2 
+        });
+
+        // 将画布转为 Blob 对象
+        canvas.toBlob(async (blob) => {
+          const fileName = `排班表_${currentMonth}月.png`;
+          const file = new File([blob], fileName, { type: "image/png" });
+
+          // 检查是否支持原生分享 API 且支持文件分享
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: '排班计划分享',
+              text: `${currentMonth}月份排班详情，请查收。`
+            });
+          } else {
+            // 如果不支持，则回退到自动下载
+            const imageData = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = imageData;
+            link.click();
+            alert("您的浏览器不支持直接分享，已为您下载图片，请手动发送。");
+          }
+        }, "image/png");
+
+      } catch (err) {
+        console.error("分享失败:", err);
+        alert("生成分享内容出错");
+      } finally {
+        // 恢复之前的折叠状态
+        people.forEach((p, i) => p._open = originalStates[i]);
+        render();
+      }
     }, 300);
   }
 
