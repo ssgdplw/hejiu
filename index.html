@@ -4,8 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" id="themeColor" content="#f3f4f6">
-  <title>智能排班助手</title>
+  <title>智能排班助手 V4.5</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   
   <style>
@@ -29,9 +28,9 @@
       --card-bg: #1f2937;
       --text-main: #f9fafb;
       --text-sub: #9ca3af;
-      --duty-bg: #7f1d1d;
+      --duty-bg: #450a0a;
       --duty-text: #fecaca;
-      --rest-bg: #0c4a6e;
+      --rest-bg: #082f49;
       --rest-text: #bae6fd;
       --border: #374151;
       --input-bg: #111827;
@@ -41,75 +40,71 @@
     .container { max-width: 600px; margin: 0 auto; }
     
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    
-    .conflict-panel { background: var(--card-bg); border-radius: 16px; padding: 15px; margin-bottom: 20px; border: 1px solid var(--border); display: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-    .conflict-title { font-weight: 800; font-size: 0.9rem; margin-bottom: 12px; color: var(--text-main); border-bottom: 1px solid var(--border); padding-bottom: 8px; display: flex; justify-content: space-between; }
-    .today-tag { font-size: 0.7rem; color: var(--primary); font-weight: normal; }
-    .conflict-item { font-size: 0.82rem; padding: 10px 12px; border-radius: 10px; margin-bottom: 6px; border-left: 5px solid; line-height: 1.4; }
-    .c-duty { background: var(--duty-bg); color: var(--duty-text); border-color: var(--duty-text); }
-    .c-rest { background: var(--rest-bg); color: var(--rest-text); border-color: var(--rest-text); }
+    .month-picker { display: flex; align-items: center; gap: 12px; background: var(--card-bg); padding: 6px 16px; border-radius: 14px; border: 1px solid var(--border); }
+    .nav-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--primary); padding: 4px; }
 
     .btn-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
-    .btn { padding: 12px 2px; border: none; border-radius: 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer; background: var(--primary); color: #fff; transition: opacity 0.2s; }
-    .btn:active { opacity: 0.8; }
+    .btn { padding: 12px 2px; border: none; border-radius: 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer; background: var(--primary); color: #fff; transition: all 0.1s; text-align: center; }
+    .btn:active { transform: scale(0.94); opacity: 0.9; }
     .btn-secondary { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); }
-    .btn-share { background: var(--success); }
 
-    .person-card { background: var(--card-bg); border-radius: 20px; margin-bottom: 12px; border: 1px solid var(--border); overflow: hidden; }
-    .person-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .conflict-panel { background: var(--card-bg); border-radius: 16px; padding: 15px; margin-bottom: 20px; border: 1px solid var(--border); display: none; }
+    .conflict-title { font-weight: 800; font-size: 0.85rem; margin-bottom: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .conflict-item { font-size: 0.75rem; padding: 8px; border-radius: 8px; margin-bottom: 5px; border-left: 4px solid; display: flex; justify-content: space-between; align-items: center;}
+    .c-tag { font-size: 0.55rem; padding: 2px 5px; border-radius: 4px; font-weight: bold; }
+
+    .person-card { background: var(--card-bg); border-radius: 20px; margin-bottom: 12px; border: 1px solid var(--border); overflow: hidden; transition: all 0.3s ease; }
+    .person-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .name-box { display: flex; align-items: center; gap: 8px; }
+    .edit-icon { font-size: 0.8rem; opacity: 0.5; padding: 4px; cursor: pointer; }
+    .edit-icon:hover { opacity: 1; color: var(--primary); }
+    .stats-tags span { font-size: 0.65rem; margin-right: 5px; background: var(--body-bg); padding: 2px 6px; border-radius: 6px; }
+
+    .calendar-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+    .person-card.open .calendar-content { max-height: 1200px; }
+
+    table { width: 100%; border-collapse: separate; border-spacing: 4px; padding: 0 15px 15px; }
+    th { font-size: 0.65rem; color: var(--text-sub); padding-bottom: 8px; }
+    td { height: 46px; text-align: center; border-radius: 12px; background: var(--input-bg); font-weight: 700; border: 1px solid var(--border); font-size: 0.95rem; position: relative; }
     
-    .name-clickable { cursor: pointer; border-bottom: 1.5px dashed var(--primary); color: var(--text-main); margin-right: 4px; }
-    
-    .stats-tags span { font-size: 0.7rem; margin-right: 8px; background: var(--body-bg); padding: 2px 8px; border-radius: 6px; }
-
-    .action-text { font-size: 0.8rem; color: var(--text-sub); margin-right: 12px; cursor: pointer; }
-    .calendar-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-    .person-card.open .calendar-content { max-height: 1000px; }
-
-    table { width: 100%; border-collapse: separate; border-spacing: 4px; padding: 10px 15px 20px 15px; }
-    th { font-size: 0.7rem; color: var(--text-sub); }
-    td { height: 48px; text-align: center; border-radius: 12px; background: var(--input-bg); font-weight: 700; border: 1px solid var(--border); font-size: 0.95rem; position: relative; }
-    
-    .is-today-cell { outline: 2px solid var(--primary); position: relative; }
-    .is-today-cell::after { content: '今'; position: absolute; top: 0; right: 0; background: var(--primary); color: white; font-size: 0.5rem; padding: 1px 3px; border-radius: 0 8px 0 8px; }
-
+    .is-today-cell { outline: 2.5px solid var(--primary); z-index: 1; }
     .is-duty { background: var(--duty-bg) !important; color: var(--duty-text) !important; border-color: var(--duty-text) !important; }
     .is-rest { background: var(--rest-bg) !important; color: var(--rest-text) !important; border-color: var(--rest-text) !important; }
-    .tag { display: block; font-size: 0.55rem; font-weight: normal; }
+    .tag { display: block; font-size: 0.55rem; font-weight: normal; margin-top: 2px; }
 
-    .card-footer { padding: 14px 20px; background: var(--input-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
-    .del-link { color: #9ca3af; font-size: 0.75rem; cursor: pointer; text-decoration: underline; }
+    .card-footer { padding: 14px 20px; background: var(--input-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .footer-btn { font-size: 0.78rem; color: var(--primary); cursor: pointer; font-weight: 600; padding: 4px 8px; }
 
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-    .modal-content { background: var(--card-bg); width: 85%; max-width: 320px; padding: 25px; border-radius: 24px; }
-    input { width: 100%; padding: 14px; margin: 18px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--input-bg); color: var(--text-main); font-size: 1rem; box-sizing: border-box; }
-    
+    .modal-content { background: var(--card-bg); width: 85%; max-width: 320px; padding: 25px; border-radius: 28px; }
+    input { width: 100%; padding: 14px; margin: 18px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--input-bg); color: var(--text-main); font-size: 1rem; box-sizing: border-box; outline: none; }
     #fileInput { display: none; }
   </style>
 </head>
 <body>
 
-<div class="container" id="mainContainer">
+<div class="container">
   <div class="header">
-    <h2 id="monthTitle">智能排班助手</h2>
+    <div class="month-picker">
+        <button class="nav-btn" onclick="changeMonth(-1)">❮</button>
+        <b id="monthTitle">...</b>
+        <button class="nav-btn" onclick="changeMonth(1)">❯</button>
+    </div>
     <button id="themeToggle" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">🌗</button>
   </div>
 
   <div class="btn-group">
-    <button class="btn" onclick="openModal('add')">＋添加人员</button>
-    <button class="btn btn-share" onclick="shareAsImage()">📸保存图片</button>
-    <button class="btn btn-secondary" onclick="exportData()">📤导出配置</button>
-    <button class="btn btn-secondary" onclick="triggerImport()">📥导入配置</button>
+    <button class="btn" onclick="openModal()">＋人员</button>
+    <button class="btn btn-share" onclick="shareAsImage()" style="background:var(--success)">📸图片</button>
+    <button class="btn btn-secondary" onclick="exportData()">📤导出</button>
+    <button class="btn btn-secondary" onclick="triggerImport()">📥导入</button>
   </div>
 
   <input type="file" id="fileInput" accept=".json" onchange="importData(event)">
 
   <div id="captureArea">
     <div id="conflictPanel" class="conflict-panel">
-      <div class="conflict-title">
-        <span>📅 冲突时间线</span>
-        <span class="today-tag" id="todayLabel"></span>
-      </div>
+      <div class="conflict-title"><span>⏰ 待处理预警</span><span id="todayLabel" style="color:var(--primary); font-size:0.7rem;"></span></div>
       <div id="conflictList"></div>
     </div>
     <div id="mainList"></div>
@@ -118,278 +113,215 @@
 
 <div class="modal" id="modal">
   <div class="modal-content">
-    <h3 id="modalTitle" style="margin:0; text-align:center;"></h3>
-    <input type="text" id="pName" placeholder="请输入姓名" maxlength="10">
-    <div style="display:flex; gap:10px">
+    <h3 style="margin:0; text-align:center;">添加成员</h3>
+    <input type="text" id="pName" placeholder="姓名" maxlength="10">
+    <div style="display:flex; gap:12px">
       <button class="btn btn-secondary" style="flex:1" onclick="closeModal()">取消</button>
-      <button class="btn" style="flex:1" id="modalConfirmBtn">确定</button>
+      <button class="btn" style="flex:1" id="addBtn">确定</button>
     </div>
   </div>
 </div>
 
 <script>
-  const todayDate = new Date();
-  const currentYear = todayDate.getFullYear();
-  const currentMonth = todayDate.getMonth() + 1;
-  const todayDay = todayDate.getDate();
-  const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  let viewDate = new Date();
+  let people = [];
 
-  const STORAGE_KEY = 'duty_v22_final';
+  const getGlobalListKey = () => `duty_global_names`;
+  const getStorageKey = (y, m) => `duty_v4_${y || viewDate.getFullYear()}_${m || (viewDate.getMonth() + 1)}`;
 
-  document.getElementById('monthTitle').innerText = `${currentYear}年${currentMonth}月`;
-  document.getElementById('todayLabel').innerText = `今天: ${currentMonth}月${todayDay}日 ${weekNames[todayDate.getDay()]}`;
+  function loadData() {
+      const data = localStorage.getItem(getStorageKey());
+      const globalNames = JSON.parse(localStorage.getItem(getGlobalListKey()) || "[]");
+      if (data) {
+          people = JSON.parse(data);
+          globalNames.forEach(name => { if(!people.find(p => p.name === name)) people.push({ name, duty: [], rest: [], _open: true }); });
+          people = people.filter(p => globalNames.includes(p.name));
+      } else {
+          people = globalNames.map(name => ({ name, duty: [], rest: [], _open: true }));
+      }
+      render();
+  }
 
-  let people = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  let editingIdx = null;
-
-  const themeToggle = document.getElementById('themeToggle');
-  themeToggle.onclick = () => {
-    document.documentElement.toggleAttribute('data-theme');
-    localStorage.setItem('theme', document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light');
-  };
-  if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  function changeMonth(offset) { viewDate.setMonth(viewDate.getMonth() + offset); loadData(); }
 
   function render() {
-    const list = document.getElementById('mainList');
-    list.innerHTML = '';
-    people.forEach((p, pIdx) => {
-      const card = document.createElement('div');
-      card.className = `person-card ${p._open ? 'open' : ''}`;
-      card.innerHTML = `
-        <div class="person-header">
-          <div onclick="toggleFold(${pIdx})" style="flex:1">
-            <span class="name-clickable" onclick="event.stopPropagation(); openEditName(${pIdx})"><b>${p.name}</b></span>
-            <div class="stats-tags">
-              <span style="color:var(--duty-text)">值班 ${p.duty.length}</span>
-              <span style="color:var(--rest-text)">休息 ${p.rest.length}</span>
+      const year = viewDate.getFullYear(), month = viewDate.getMonth() + 1;
+      const daysInMonth = new Date(year, month, 0).getDate();
+      document.getElementById('monthTitle').innerText = `${year}年${month}月`;
+      const now = new Date();
+      const isCurrentMonth = (now.getMonth() === viewDate.getMonth() && now.getFullYear() === viewDate.getFullYear());
+      const todayDay = isCurrentMonth ? now.getDate() : -1;
+      document.getElementById('todayLabel').innerText = isCurrentMonth ? `今日: ${todayDay}日` : "";
+
+      const list = document.getElementById('mainList');
+      list.innerHTML = '';
+      people.forEach((p, pIdx) => {
+          const card = document.createElement('div');
+          card.className = `person-card ${p._open ? 'open' : ''}`;
+          card.innerHTML = `
+            <div class="person-header" onclick="handleHeaderClick(event, ${pIdx})">
+              <div style="flex:1">
+                <div class="name-box">
+                    <b style="font-size:1.1rem; border-bottom:1.5px dashed var(--primary)">${p.name}</b>
+                    <span class="edit-icon" onclick="renamePerson(event, ${pIdx})">✏️</span>
+                </div>
+                <div class="stats-tags">
+                  <span style="color:var(--duty-text)">值班 ${p.duty.length}</span>
+                  <span style="color:var(--rest-text)">休息 ${p.rest.length}</span>
+                </div>
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-sub)">${p._open?'收起':'详情'}</div>
             </div>
-          </div>
-          <div style="display:flex; align-items:center">
-            <span class="action-text" onclick="clearPersonData(${pIdx}, event)">重置</span>
-            <span style="font-size:0.8rem; color:var(--text-sub)" onclick="toggleFold(${pIdx})">${p._open?'▼':'▶'}</span>
-          </div>
-        </div>
-        <div class="calendar-content">
-          ${drawCalendar(p, pIdx)}
-          <div class="card-footer">
-            <span style="font-size:0.75rem; color:var(--text-sub)">点击名字可重命名</span>
-            <span class="del-link" onclick="deletePerson(${pIdx})">删除该成员</span>
-          </div>
-        </div>
-      `;
-      list.appendChild(card);
-    });
-    checkConflicts();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(people));
-  }
-
-  function checkConflicts() {
-    const dutyMap = {}; const restMap = {};
-    people.forEach(p => {
-      p.duty.forEach(d => (dutyMap[d] = dutyMap[d] || []).push(p.name));
-      p.rest.forEach(d => (restMap[d] = restMap[d] || []).push(p.name));
-    });
-
-    const panel = document.getElementById('conflictPanel');
-    const cList = document.getElementById('conflictList');
-    cList.innerHTML = '';
-    let allConflicts = [];
-
-    Object.keys(dutyMap).forEach(d => {
-      const dayInt = parseInt(d);
-      if(dutyMap[d].length > 1 && dayInt >= todayDay) {
-        allConflicts.push({ day: dayInt, names: dutyMap[d].join(' & '), type: '值班', css: 'c-duty' });
-      }
-    });
-
-    Object.keys(restMap).forEach(d => {
-      const dayInt = parseInt(d);
-      if(restMap[d].length > 1 && dayInt >= todayDay) {
-        allConflicts.push({ day: dayInt, names: restMap[d].join(' & '), type: '休息', css: 'c-rest' });
-      }
-    });
-
-    allConflicts.sort((a, b) => a.day - b.day);
-
-    if(allConflicts.length > 0) {
-      allConflicts.forEach(item => {
-        const dateObj = new Date(currentYear, currentMonth - 1, item.day);
-        const weekDay = weekNames[dateObj.getDay()];
-        const dateLabel = (item.day === todayDay) 
-          ? `<span style="color:var(--primary); font-weight:bold;">[今天] ${currentMonth}月${item.day}日 ${weekDay}</span>`
-          : `${currentMonth}月${item.day}日 ${weekDay}`;
-        cList.innerHTML += `<div class="conflict-item ${item.css}"><b>${item.names}</b> 在 <b>${dateLabel}</b> 重复${item.type}</div>`;
+            <div class="calendar-content">
+              ${drawCalendar(p, pIdx, year, month, todayDay, daysInMonth)}
+              <div class="card-footer">
+                <span class="footer-btn" style="color:var(--success)" onclick="applyPattern(${pIdx}, ${daysInMonth})">🪄规律填充</span>
+                <span class="footer-btn" style="color:#ef4444" onclick="deletePerson(${pIdx})">彻底移除</span>
+              </div>
+            </div>
+          `;
+          list.appendChild(card);
       });
-      panel.style.display = 'block';
-    } else {
-      panel.style.display = 'none';
-    }
+      checkConflicts(daysInMonth);
+      saveAll();
   }
 
-  function drawCalendar(p, pIdx) {
-    const days = new Date(currentYear, currentMonth, 0).getDate();
-    let firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
-    let start = (firstDay === 0) ? 6 : firstDay - 1; 
+  function saveAll() {
+      localStorage.setItem(getStorageKey(), JSON.stringify(people));
+      localStorage.setItem(getGlobalListKey(), JSON.stringify(people.map(p => p.name)));
+  }
 
-    let html = '<table><tr><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr><tr>';
-    for(let i=0; i<start; i++) html += '<td></td>';
-    for(let d=1; d<=days; d++) {
-      if((d+start-1)%7 === 0 && d!==1) html += '</tr><tr>';
-      const isD = p.duty.includes(d); const isR = p.rest.includes(d);
-      const isToday = (d === todayDay);
-      html += `<td class="${isD?'is-duty':(isR?'is-rest':'')} ${isToday?'is-today-cell':''}" onclick="toggleDay(${pIdx},${d})">${d}<span class="tag">${isD?'值班':(isR?'休息':'')}</span></td>`;
-    }
-    return html + '</tr></table>';
+  function drawCalendar(p, pIdx, year, month, todayDay, days) {
+      let firstDay = new Date(year, month - 1, 1).getDay();
+      let start = (firstDay === 0) ? 6 : firstDay - 1; 
+      let html = '<table><tr><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr><tr>';
+      for(let i=0; i<start; i++) html += '<td></td>';
+      for(let d=1; d<=days; d++) {
+          if((d+start-1)%7 === 0 && d!==1) html += '</tr><tr>';
+          const isD = p.duty.includes(d), isR = p.rest.includes(d);
+          html += `<td class="${isD?'is-duty':(isR?'is-rest':'')} ${d===todayDay?'is-today-cell':''}" onclick="toggleDay(${pIdx},${d})">
+                      ${d}<span class="tag">${isD?'值班':(isR?'休息':'')}</span>
+                  </td>`;
+      }
+      return html + '</tr></table>';
+  }
+
+  // 修改名字逻辑
+  function renamePerson(e, idx) {
+      e.stopPropagation(); // 阻止折叠卡片
+      const oldName = people[idx].name;
+      const newName = prompt("请输入新的名字：", oldName);
+      if (newName && newName.trim() !== "" && newName !== oldName) {
+          people[idx].name = newName.trim();
+          render();
+      }
+  }
+
+  function handleHeaderClick(e, idx) {
+      // 只有不是点在修改图标上才触发折叠
+      if (!e.target.classList.contains('edit-icon')) {
+          people[idx]._open = !people[idx]._open;
+          render();
+      }
+  }
+
+  function toggleDay(pIdx, d) {
+      const p = people[pIdx];
+      if(!p.duty.includes(d) && !p.rest.includes(d)) p.duty.push(d);
+      else if(p.duty.includes(d)) { p.duty = p.duty.filter(x=>x!==d); p.rest.push(d); }
+      else p.rest = p.rest.filter(x=>x!==d);
+      render();
+  }
+
+  function applyPattern(idx, maxDays) {
+      const p = prompt("规律 (1:值班, 0:休息, .:上班)", "1..0");
+      if (!p) return;
+      const s = prompt(`开始日期 (1-${maxDays})`, "1");
+      const startDay = parseInt(s);
+      if (isNaN(startDay)) return;
+      people[idx].duty = []; people[idx].rest = [];
+      for(let i = 1; i <= maxDays; i++) {
+          if (i < startDay) continue;
+          const char = p[(i - startDay) % p.length];
+          if(char === '1') people[idx].duty.push(i);
+          else if(char === '0') people[idx].rest.push(i);
+      }
+      render();
+  }
+
+  function checkConflicts(daysInMonth) {
+      const cList = document.getElementById('conflictList');
+      cList.innerHTML = '';
+      let hasAlert = false;
+      const now = new Date();
+      now.setHours(0,0,0,0);
+
+      for (let d = 1; d <= daysInMonth; d++) {
+          const loopDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), d);
+          if (loopDate < now) continue;
+
+          const onDuty = people.filter(p => p.duty.includes(d)).map(p => p.name);
+          const onRest = people.filter(p => p.rest.includes(d)).map(p => p.name);
+
+          if (onDuty.length > 1) {
+              hasAlert = true;
+              cList.innerHTML += `<div class="conflict-item" style="background:var(--duty-bg); color:var(--duty-text); border-color:var(--duty-text)"><span><b>${d}号</b>: ${onDuty.join(' & ')}</span><span class="c-tag" style="background:var(--duty-text); color:#fff">重复值班</span></div>`;
+          }
+          if (onRest.length > 1) {
+              hasAlert = true;
+              cList.innerHTML += `<div class="conflict-item" style="background:var(--rest-bg); color:var(--rest-text); border-color:var(--rest-text)"><span><b>${d}号</b>: ${onRest.join(' & ')}</span><span class="c-tag" style="background:var(--rest-text); color:#fff">重复休息</span></div>`;
+          }
+      }
+      document.getElementById('conflictPanel').style.display = hasAlert ? 'block' : 'none';
+  }
+
+  function deletePerson(i) { if(confirm(`彻底移除 [${people[i].name}]？`)) { people.splice(i, 1); render(); } }
+  function openModal() { document.getElementById('modal').style.display = 'flex'; }
+  function closeModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('pName').value = ''; }
+  document.getElementById('addBtn').onclick = () => {
+      const name = document.getElementById('pName').value.trim();
+      if(name) { people.push({name, duty:[], rest:[], _open:true}); render(); closeModal(); }
+  };
+
+  async function shareAsImage() {
+      const area = document.getElementById('captureArea'), original = people.map(p => p._open);
+      people.forEach(p => p._open = true); render();
+      setTimeout(async () => {
+          const canvas = await html2canvas(area, { backgroundColor: '#ffffff', scale: 2 });
+          const a = document.createElement('a');
+          a.download = `排班表_${viewDate.getFullYear()}_${viewDate.getMonth()+1}.png`; 
+          a.href = canvas.toDataURL(); a.click();
+          people.forEach((p,i) => p._open = original[i]); render();
+      }, 400);
   }
 
   function exportData() {
-    if (people.length === 0) return alert("当前没有数据可以导出");
-    const dataStr = JSON.stringify(people, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `排班备份_${currentYear}_${currentMonth}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const backup = { v: "4.5", data: people, date: { y: viewDate.getFullYear(), m: viewDate.getMonth()+1 } };
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(backup)], {type: "application/json"}));
+    a.download = `排班备份.json`; a.click();
   }
 
   function triggerImport() { document.getElementById('fileInput').click(); }
-
-  function importData(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const imported = JSON.parse(e.target.result);
-        if (Array.isArray(imported) && confirm("导入将替换当前所有数据，是否继续？")) {
-          people = imported;
-          render();
-          alert("导入成功！");
-        }
-      } catch (err) { alert("解析失败。"); }
-      event.target.value = '';
-    };
-    reader.readAsText(file);
+  function importData(e) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+          try {
+              const imported = JSON.parse(ev.target.result);
+              people = imported.data || imported; render();
+          } catch (err) { alert("导入失败"); }
+      };
+      reader.readAsText(e.target.files[0]);
   }
 
-  function toggleFold(i) { people[i]._open = !people[i]._open; render(); }
-  
-  function toggleDay(pIdx, d) {
-    const p = people[pIdx];
-    if(p.duty.includes(d)) { p.duty = p.duty.filter(x=>x!==d); p.rest.push(d); }
-    else if(p.rest.includes(d)) { p.rest = p.rest.filter(x=>x!==d); }
-    else { p.duty.push(d); }
-    render();
-  }
+  const themeToggle = document.getElementById('themeToggle');
+  themeToggle.onclick = () => {
+    const isDark = document.documentElement.toggleAttribute('data-theme');
+    localStorage.setItem('duty_theme_v4', isDark ? 'dark' : 'light');
+  };
+  if(localStorage.getItem('duty_theme_v4') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 
-  function openEditName(idx) { 
-    editingIdx = idx; 
-    openModal('edit'); 
-    const input = document.getElementById('pName');
-    input.value = people[idx].name; 
-    setTimeout(() => input.focus(), 100);
-  }
-
-  function openModal(mode) {
-    const modal = document.getElementById('modal');
-    modal.style.display = 'flex';
-    document.getElementById('modalTitle').innerText = mode === 'add' ? '新增人员' : '修改姓名';
-    document.getElementById('modalConfirmBtn').onclick = mode === 'add' ? addPerson : saveName;
-  }
-
-  function closeModal() { 
-    document.getElementById('modal').style.display = 'none'; 
-    editingIdx = null; 
-    document.getElementById('pName').value = '';
-  }
-
-  function addPerson() {
-    const name = document.getElementById('pName').value.trim();
-    if(name) { 
-      people.push({name, duty:[], rest:[], _open:true}); 
-      render(); 
-      closeModal(); 
-    }
-  }
-
-  function saveName() {
-    const name = document.getElementById('pName').value.trim();
-    if(name && editingIdx !== null) { 
-      people[editingIdx].name = name; 
-      render(); 
-      closeModal(); 
-    }
-  }
-
-  // 修改后的分享函数：支持调用原生 APP 分享菜单
-  async function shareAsImage() {
-    const area = document.getElementById('captureArea');
-    const originalStates = people.map(p => p._open);
-    
-    // 强制展开所有卡片以截取完整内容
-    people.forEach(p => p._open = true);
-    render();
-
-    setTimeout(async () => {
-      try {
-        const canvas = await html2canvas(area, { 
-          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--body-bg'), 
-          scale: 2 
-        });
-
-        // 将画布转为 Blob 对象
-        canvas.toBlob(async (blob) => {
-          const fileName = `排班表_${currentMonth}月.png`;
-          const file = new File([blob], fileName, { type: "image/png" });
-
-          // 检查是否支持原生分享 API 且支持文件分享
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: '排班计划分享',
-              text: `${currentMonth}月份排班详情，请查收。`
-            });
-          } else {
-            // 如果不支持，则回退到自动下载
-            const imageData = canvas.toDataURL("image/png");
-            const link = document.createElement('a');
-            link.download = fileName;
-            link.href = imageData;
-            link.click();
-            alert("您的浏览器不支持直接分享，已为您下载图片，请手动发送。");
-          }
-        }, "image/png");
-
-      } catch (err) {
-        console.error("分享失败:", err);
-        alert("生成分享内容出错");
-      } finally {
-        // 恢复之前的折叠状态
-        people.forEach((p, i) => p._open = originalStates[i]);
-        render();
-      }
-    }, 300);
-  }
-
-  function clearPersonData(idx, e) {
-    e.stopPropagation();
-    if(confirm(`确定重置 ${people[idx].name} 的所有值班休息数据吗？`)) { 
-      people[idx].duty=[]; 
-      people[idx].rest=[]; 
-      render(); 
-    }
-  }
-
-  function deletePerson(idx) {
-    if(confirm(`注意：确认删除人员 [${people[idx].name}]？此操作不可撤销。`)) { 
-      people.splice(idx, 1); 
-      render(); 
-    }
-  }
-
-  window.onload = render;
+  window.onload = loadData;
 </script>
 </body>
 </html>
