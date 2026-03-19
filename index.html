@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>智能排班助手 V4.5</title>
+  <title>智能排班助手 V4.6</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   
   <style>
@@ -57,7 +57,6 @@
     .person-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
     .name-box { display: flex; align-items: center; gap: 8px; }
     .edit-icon { font-size: 0.8rem; opacity: 0.5; padding: 4px; cursor: pointer; }
-    .edit-icon:hover { opacity: 1; color: var(--primary); }
     .stats-tags span { font-size: 0.65rem; margin-right: 5px; background: var(--body-bg); padding: 2px 6px; border-radius: 6px; }
 
     .calendar-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
@@ -95,7 +94,7 @@
 
   <div class="btn-group">
     <button class="btn" onclick="openModal()">＋人员</button>
-    <button class="btn btn-share" onclick="shareAsImage()" style="background:var(--success)">📸图片</button>
+    <button class="btn" onclick="shareAsImage()" style="background:var(--success)">🔗直接分享</button>
     <button class="btn btn-secondary" onclick="exportData()">📤导出</button>
     <button class="btn btn-secondary" onclick="triggerImport()">📥导入</button>
   </div>
@@ -176,7 +175,7 @@
               ${drawCalendar(p, pIdx, year, month, todayDay, daysInMonth)}
               <div class="card-footer">
                 <span class="footer-btn" style="color:var(--success)" onclick="applyPattern(${pIdx}, ${daysInMonth})">🪄规律填充</span>
-                <span class="footer-btn" style="color:#ef4444" onclick="deletePerson(${pIdx})">彻底移除</span>
+                <span class="footer-btn" style="color:#ef4444" onclick="deletePerson(${pIdx})">移除</span>
               </div>
             </div>
           `;
@@ -206,23 +205,14 @@
       return html + '</tr></table>';
   }
 
-  // 修改名字逻辑
   function renamePerson(e, idx) {
-      e.stopPropagation(); // 阻止折叠卡片
-      const oldName = people[idx].name;
-      const newName = prompt("请输入新的名字：", oldName);
-      if (newName && newName.trim() !== "" && newName !== oldName) {
-          people[idx].name = newName.trim();
-          render();
-      }
+      e.stopPropagation();
+      const newName = prompt("名字修改：", people[idx].name);
+      if (newName && newName.trim() !== "") { people[idx].name = newName.trim(); render(); }
   }
 
   function handleHeaderClick(e, idx) {
-      // 只有不是点在修改图标上才触发折叠
-      if (!e.target.classList.contains('edit-icon')) {
-          people[idx]._open = !people[idx]._open;
-          render();
-      }
+      if (!e.target.classList.contains('edit-icon')) { people[idx]._open = !people[idx]._open; render(); }
   }
 
   function toggleDay(pIdx, d) {
@@ -236,7 +226,7 @@
   function applyPattern(idx, maxDays) {
       const p = prompt("规律 (1:值班, 0:休息, .:上班)", "1..0");
       if (!p) return;
-      const s = prompt(`开始日期 (1-${maxDays})`, "1");
+      const s = prompt(`开始日期`, "1");
       const startDay = parseInt(s);
       if (isNaN(startDay)) return;
       people[idx].duty = []; people[idx].rest = [];
@@ -253,16 +243,11 @@
       const cList = document.getElementById('conflictList');
       cList.innerHTML = '';
       let hasAlert = false;
-      const now = new Date();
-      now.setHours(0,0,0,0);
-
+      const now = new Date(); now.setHours(0,0,0,0);
       for (let d = 1; d <= daysInMonth; d++) {
-          const loopDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), d);
-          if (loopDate < now) continue;
-
+          if (new Date(viewDate.getFullYear(), viewDate.getMonth(), d) < now) continue;
           const onDuty = people.filter(p => p.duty.includes(d)).map(p => p.name);
           const onRest = people.filter(p => p.rest.includes(d)).map(p => p.name);
-
           if (onDuty.length > 1) {
               hasAlert = true;
               cList.innerHTML += `<div class="conflict-item" style="background:var(--duty-bg); color:var(--duty-text); border-color:var(--duty-text)"><span><b>${d}号</b>: ${onDuty.join(' & ')}</span><span class="c-tag" style="background:var(--duty-text); color:#fff">重复值班</span></div>`;
@@ -275,7 +260,7 @@
       document.getElementById('conflictPanel').style.display = hasAlert ? 'block' : 'none';
   }
 
-  function deletePerson(i) { if(confirm(`彻底移除 [${people[i].name}]？`)) { people.splice(i, 1); render(); } }
+  function deletePerson(i) { if(confirm(`移除 [${people[i].name}]？`)) { people.splice(i, 1); render(); } }
   function openModal() { document.getElementById('modal').style.display = 'flex'; }
   function closeModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('pName').value = ''; }
   document.getElementById('addBtn').onclick = () => {
@@ -283,23 +268,49 @@
       if(name) { people.push({name, duty:[], rest:[], _open:true}); render(); closeModal(); }
   };
 
+  // 重点修改：直接分享图片到 APP
   async function shareAsImage() {
       const area = document.getElementById('captureArea'), original = people.map(p => p._open);
+      // 1. 临时展开所有卡片
       people.forEach(p => p._open = true); render();
-      setTimeout(async () => {
+      
+      try {
+          // 2. 生成 Canvas
           const canvas = await html2canvas(area, { backgroundColor: '#ffffff', scale: 2 });
-          const a = document.createElement('a');
-          a.download = `排班表_${viewDate.getFullYear()}_${viewDate.getMonth()+1}.png`; 
-          a.href = canvas.toDataURL(); a.click();
+          
+          // 3. 将 Canvas 转为 Blob (二进制数据)
+          canvas.toBlob(async (blob) => {
+              const file = new File([blob], `排班表_${viewDate.getMonth()+1}月.png`, { type: 'image/png' });
+              
+              // 4. 检查浏览器是否支持分享文件
+              if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                  await navigator.share({
+                      files: [file],
+                      title: '排班表',
+                      text: `${viewDate.getFullYear()}年${viewDate.getMonth()+1}月排班安排`
+                  });
+              } else {
+                  // 如果不支持直接分享文件，则回退到传统下载模式
+                  const a = document.createElement('a');
+                  a.download = `排班表_${viewDate.getMonth()+1}月.png`;
+                  a.href = canvas.toDataURL(); a.click();
+                  alert("当前浏览器不支持直接分享，已自动为您保存图片。");
+              }
+          }, 'image/png');
+
+      } catch (err) {
+          console.error("分享失败:", err);
+      } finally {
+          // 5. 还原折叠状态
           people.forEach((p,i) => p._open = original[i]); render();
-      }, 400);
+      }
   }
 
   function exportData() {
-    const backup = { v: "4.5", data: people, date: { y: viewDate.getFullYear(), m: viewDate.getMonth()+1 } };
+    const backup = { v: "4.6", data: people, date: { y: viewDate.getFullYear(), m: viewDate.getMonth()+1 } };
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(backup)], {type: "application/json"}));
-    a.download = `排班备份.json`; a.click();
+    a.download = `备份.json`; a.click();
   }
 
   function triggerImport() { document.getElementById('fileInput').click(); }
