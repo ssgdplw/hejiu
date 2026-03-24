@@ -106,7 +106,7 @@
 
   <div class="btn-group">
     <button class="btn" onclick="openModal()">＋人员</button>
-    <button class="btn" onclick="shareAsImage()" style="background:var(--success)">🔗直接分享</button>
+    <button class="btn" onclick="shareAsImage()" style="background:var(--success)">🔗分享</button>
     <button class="btn btn-secondary" onclick="exportData()">📤导出</button>
     <button class="btn btn-secondary" onclick="triggerImport()">📥导入</button>
   </div>
@@ -116,7 +116,7 @@
   <div id="captureArea" style="padding: 2px;">
     <div id="conflictPanel" class="conflict-panel open">
       <div class="conflict-title" onclick="toggleConflictPanel()">
-          <span>⏰ 待处理预警 (点击展开/收起)</span>
+          <span>⏰ 待处理预警</span>
           <span id="todayLabel" style="color:var(--primary); font-size:0.7rem;"></span>
       </div>
       <div class="conflict-list-container">
