@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>智能排班助手 V4.6</title>
+  <title>智能排班助手 V4.6 - 可折叠预警版</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   
   <style>
@@ -48,8 +48,14 @@
     .btn:active { transform: scale(0.94); opacity: 0.9; }
     .btn-secondary { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); }
 
+    /* 预警面板样式增强 */
     .conflict-panel { background: var(--card-bg); border-radius: 16px; padding: 15px; margin-bottom: 20px; border: 1px solid var(--border); display: none; }
-    .conflict-title { font-weight: 800; font-size: 0.85rem; margin-bottom: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .conflict-title { font-weight: 800; font-size: 0.85rem; margin-bottom: 0px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding-bottom: 8px; transition: margin 0.3s; }
+    .conflict-panel.open .conflict-title { border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+    
+    .conflict-list-container { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+    .conflict-panel.open .conflict-list-container { max-height: 1000px; }
+
     .conflict-item { font-size: 0.75rem; padding: 8px; border-radius: 8px; margin-bottom: 5px; border-left: 4px solid; display: flex; justify-content: space-between; align-items: center;}
     .c-tag { font-size: 0.55rem; padding: 2px 5px; border-radius: 4px; font-weight: bold; }
 
@@ -102,9 +108,14 @@
   <input type="file" id="fileInput" accept=".json" onchange="importData(event)">
 
   <div id="captureArea">
-    <div id="conflictPanel" class="conflict-panel">
-      <div class="conflict-title"><span>⏰ 待处理预警</span><span id="todayLabel" style="color:var(--primary); font-size:0.7rem;"></span></div>
-      <div id="conflictList"></div>
+    <div id="conflictPanel" class="conflict-panel open">
+      <div class="conflict-title" onclick="toggleConflictPanel()">
+          <span>⏰ 待处理预警 </span>
+          <span id="todayLabel" style="color:var(--primary); font-size:0.7rem;"></span>
+      </div>
+      <div class="conflict-list-container">
+          <div id="conflictList"></div>
+      </div>
     </div>
     <div id="mainList"></div>
   </div>
@@ -215,6 +226,12 @@
       if (!e.target.classList.contains('edit-icon')) { people[idx]._open = !people[idx]._open; render(); }
   }
 
+  // 新增：预警面板折叠切换函数
+  function toggleConflictPanel() {
+      const panel = document.getElementById('conflictPanel');
+      panel.classList.toggle('open');
+  }
+
   function toggleDay(pIdx, d) {
       const p = people[pIdx];
       if(!p.duty.includes(d) && !p.rest.includes(d)) p.duty.push(d);
@@ -268,21 +285,19 @@
       if(name) { people.push({name, duty:[], rest:[], _open:true}); render(); closeModal(); }
   };
 
-  // 重点修改：直接分享图片到 APP
   async function shareAsImage() {
       const area = document.getElementById('captureArea'), original = people.map(p => p._open);
-      // 1. 临时展开所有卡片
-      people.forEach(p => p._open = true); render();
+      const conflictOriginal = document.getElementById('conflictPanel').classList.contains('open');
+
+      // 1. 临时展开所有卡片和预警面板
+      people.forEach(p => p._open = true); 
+      document.getElementById('conflictPanel').classList.add('open');
+      render();
       
       try {
-          // 2. 生成 Canvas
           const canvas = await html2canvas(area, { backgroundColor: '#ffffff', scale: 2 });
-          
-          // 3. 将 Canvas 转为 Blob (二进制数据)
           canvas.toBlob(async (blob) => {
               const file = new File([blob], `排班表_${viewDate.getMonth()+1}月.png`, { type: 'image/png' });
-              
-              // 4. 检查浏览器是否支持分享文件
               if (navigator.canShare && navigator.canShare({ files: [file] })) {
                   await navigator.share({
                       files: [file],
@@ -290,19 +305,19 @@
                       text: `${viewDate.getFullYear()}年${viewDate.getMonth()+1}月排班安排`
                   });
               } else {
-                  // 如果不支持直接分享文件，则回退到传统下载模式
                   const a = document.createElement('a');
                   a.download = `排班表_${viewDate.getMonth()+1}月.png`;
                   a.href = canvas.toDataURL(); a.click();
                   alert("当前浏览器不支持直接分享，已自动为您保存图片。");
               }
           }, 'image/png');
-
       } catch (err) {
           console.error("分享失败:", err);
       } finally {
           // 5. 还原折叠状态
-          people.forEach((p,i) => p._open = original[i]); render();
+          people.forEach((p,i) => p._open = original[i]); 
+          if(!conflictOriginal) document.getElementById('conflictPanel').classList.remove('open');
+          render();
       }
   }
 
