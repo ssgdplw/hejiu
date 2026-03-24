@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>智能排班助手 V4.6 - 精确分享版</title>
+  <title>智能排班助手 V4.6</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   
   <style>
@@ -65,6 +65,12 @@
     .edit-icon { font-size: 0.8rem; opacity: 0.5; padding: 4px; cursor: pointer; }
     .stats-tags span { font-size: 0.65rem; margin-right: 5px; background: var(--body-bg); padding: 2px 6px; border-radius: 6px; }
 
+    /* 今日状态标签样式 */
+    .today-status-tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; margin-left: 4px; font-weight: bold; }
+    .status-duty { background: var(--duty-bg); color: var(--duty-text); border: 1px solid var(--duty-text); }
+    .status-rest { background: var(--rest-bg); color: var(--rest-text); border: 1px solid var(--rest-text); }
+    .status-work { background: var(--body-bg); color: var(--text-sub); border: 1px solid var(--border); }
+
     .calendar-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
     .person-card.open .calendar-content { max-height: 1200px; }
 
@@ -100,7 +106,7 @@
 
   <div class="btn-group">
     <button class="btn" onclick="openModal()">＋人员</button>
-    <button class="btn" onclick="shareAsImage()" style="background:var(--success)">🔗分享</button>
+    <button class="btn" onclick="shareAsImage()" style="background:var(--success)">🔗直接分享</button>
     <button class="btn btn-secondary" onclick="exportData()">📤导出</button>
     <button class="btn btn-secondary" onclick="triggerImport()">📥导入</button>
   </div>
@@ -110,7 +116,7 @@
   <div id="captureArea" style="padding: 2px;">
     <div id="conflictPanel" class="conflict-panel open">
       <div class="conflict-title" onclick="toggleConflictPanel()">
-          <span>⏰ 待处理预警</span>
+          <span>⏰ 待处理预警 (点击展开/收起)</span>
           <span id="todayLabel" style="color:var(--primary); font-size:0.7rem;"></span>
       </div>
       <div class="conflict-list-container">
@@ -136,7 +142,7 @@
   let viewDate = new Date();
   let people = [];
 
-  const getGlobalListKey = () => `duty_global_names`;
+  const getGlobalListKey = () => "duty_global_names";
   const getStorageKey = (y, m) => `duty_v4_${y || viewDate.getFullYear()}_${m || (viewDate.getMonth() + 1)}`;
 
   function loadData() {
@@ -158,6 +164,7 @@
       const year = viewDate.getFullYear(), month = viewDate.getMonth() + 1;
       const daysInMonth = new Date(year, month, 0).getDate();
       document.getElementById('monthTitle').innerText = `${year}年${month}月`;
+      
       const now = new Date();
       const isCurrentMonth = (now.getMonth() === viewDate.getMonth() && now.getFullYear() === viewDate.getFullYear());
       const todayDay = isCurrentMonth ? now.getDate() : -1;
@@ -166,6 +173,17 @@
       const list = document.getElementById('mainList');
       list.innerHTML = '';
       people.forEach((p, pIdx) => {
+          let statusHtml = '';
+          if (isCurrentMonth) {
+              if (p.duty.includes(todayDay)) {
+                  statusHtml = `<span class="today-status-tag status-duty">今日值班</span>`;
+              } else if (p.rest.includes(todayDay)) {
+                  statusHtml = `<span class="today-status-tag status-rest">今日休息</span>`;
+              } else {
+                  statusHtml = `<span class="today-status-tag status-work">今日工作</span>`;
+              }
+          }
+
           const card = document.createElement('div');
           card.className = `person-card ${p._open ? 'open' : ''}`;
           card.innerHTML = `
@@ -173,6 +191,7 @@
               <div style="flex:1">
                 <div class="name-box">
                     <b style="font-size:1.1rem; border-bottom:1.5px dashed var(--primary)">${p.name}</b>
+                    ${statusHtml}
                     <span class="edit-icon" onclick="renamePerson(event, ${pIdx})">✏️</span>
                 </div>
                 <div class="stats-tags">
@@ -242,7 +261,7 @@
   function applyPattern(idx, maxDays) {
       const p = prompt("规律 (1:值班, 0:休息, .:上班)", "1..0");
       if (!p) return;
-      const s = prompt(`开始日期`, "1");
+      const s = prompt("开始日期", "1");
       const startDay = parseInt(s);
       if (isNaN(startDay)) return;
       people[idx].duty = []; people[idx].rest = [];
@@ -284,44 +303,24 @@
       if(name) { people.push({name, duty:[], rest:[], _open:true}); render(); closeModal(); }
   };
 
-  /**
-   * 修正版：分享当前所见内容
-   * 不会强制展开所有卡片，收起的卡片在截图中依然保持收起。
-   */
   async function shareAsImage() {
       const area = document.getElementById('captureArea');
-      
       try {
-          // 直接捕获当前状态的 DOM，不进行任何 open/close 状态修改
           const canvas = await html2canvas(area, { 
-              backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--body-bg'), 
-              scale: 2,
-              useCORS: true,
-              logging: false
+              backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--body-bg').trim(), 
+              scale: 2
           });
-
           canvas.toBlob(async (blob) => {
               const file = new File([blob], `排班表_${viewDate.getMonth()+1}月.png`, { type: 'image/png' });
-              
               if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                  await navigator.share({
-                      files: [file],
-                      title: '排班表',
-                      text: `${viewDate.getFullYear()}年${viewDate.getMonth()+1}月排班详情`
-                  });
+                  await navigator.share({ files: [file], title: '排班表' });
               } else {
                   const a = document.createElement('a');
                   a.download = `排班表_${viewDate.getMonth()+1}月.png`;
-                  a.href = canvas.toDataURL(); 
-                  a.click();
-                  alert("当前浏览器不支持直接分享，已为您保存图片。");
+                  a.href = canvas.toDataURL(); a.click();
               }
           }, 'image/png');
-
-      } catch (err) {
-          console.error("分享失败:", err);
-          alert("截图生成失败，请重试");
-      }
+      } catch (err) { console.error("分享失败:", err); }
   }
 
   function exportData() {
